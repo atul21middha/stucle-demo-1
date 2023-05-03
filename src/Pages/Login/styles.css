@@ -1,0 +1,10 @@
+.root {
+  height: 100vh;
+  background-color: #111;
+}
+
+.container {
+  display: grid;
+  place-items: center;
+  height: 100%;
+}
