@@ -1,19 +1,19 @@
 import { PreJoin } from "@livekit/components-react";
-import { useParams } from "react-router-dom";
+// import { useParams } from "react-router-dom";
 import { dummyData } from "../../utils/dummyData";
 import { useUserContext } from "../../utils/UserContext";
 import "./styles.css";
 
 const Login = () => {
   const { setUser, setToken } = useUserContext();
-  const { roomName } = useParams();
+  // const { roomName } = useParams();
 
   const onSubmit = async (values) => {
     const validUser = dummyData.find((user) => user.id === values.username);
     if (!validUser) return alert("invalid user");
     try {
       let data = await fetch(
-        `/api/token?room=${roomName}&username=${values.username}`
+        `/api/token?room=stucle&username=${values.username}`
       );
       data = await data.json();
       if (data.token) {

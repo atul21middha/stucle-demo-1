@@ -1,7 +1,7 @@
 import "@livekit/react-components/dist/index.css";
 import "./App.css";
 import "@livekit/components-styles";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+// import { BrowserRouter, Route, Routes } from "react-router-dom";
 import RoomPage from "./RoomPage";
 import { UserContextProvider } from "./utils/UserContext";
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -11,13 +11,14 @@ library.add(fas);
 function App() {
   return (
     <div data-lk-theme="default">
-      <BrowserRouter>
-        <UserContextProvider>
-          <Routes>
+      {/* <BrowserRouter> */}
+      <UserContextProvider>
+        {/* <Routes>
             <Route path="/room/:roomName" element={<RoomPage />} />
-          </Routes>
-        </UserContextProvider>
-      </BrowserRouter>
+          </Routes> */}
+        <RoomPage />
+      </UserContextProvider>
+      {/* </BrowserRouter> */}
     </div>
   );
 }
