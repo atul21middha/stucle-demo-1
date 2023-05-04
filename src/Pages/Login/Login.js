@@ -13,7 +13,12 @@ const Login = () => {
     if (!validUser) return alert("invalid user");
     try {
       let data = await fetch(
-        `/api/token?room=stucle&username=${values.username}`
+        `https://cheery-gumption-28a6b0.netlify.app/.netlify/functions/api/api/token?room=stucle&username=${values.username}`,
+        {
+          headers: {
+            "Access-Control-Allow-Origin": "*",
+          },
+        }
       );
       data = await data.json();
       if (data.token) {
