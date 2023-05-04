@@ -1,19 +1,17 @@
 import { PreJoin } from "@livekit/components-react";
-// import { useParams } from "react-router-dom";
 import { dummyData } from "../../utils/dummyData";
 import { useUserContext } from "../../utils/UserContext";
 import "./styles.css";
 
 const Login = () => {
   const { setUser, setToken } = useUserContext();
-  // const { roomName } = useParams();
 
   const onSubmit = async (values) => {
     const validUser = dummyData.find((user) => user.id === values.username);
     if (!validUser) return alert("invalid user");
     try {
       let data = await fetch(
-        `https://cheery-gumption-28a6b0.netlify.app/.netlify/functions/api/api/token?room=stucle&username=${values.username}`,
+        `${process.env.REACT_APP_BASE_URL}/api/token?room=stucle&username=${values.username}`,
         {
           headers: {
             "Access-Control-Allow-Origin": "*",
