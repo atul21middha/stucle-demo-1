@@ -45,7 +45,7 @@ const Participants = () => {
         onUnpublishTrack();
       }
     });
-  }, []);
+  }, [room]);
 
   useEffect(() => {
     //To communicate between the participants
@@ -74,7 +74,7 @@ const Participants = () => {
         setUser((old) => ({ ...old, huddle: null }));
       }
     });
-  }, []);
+  }, [user?.peers]);
 
   useEffect(() => {
     //if user disconnects from room in between a huddle call
@@ -93,7 +93,7 @@ const Participants = () => {
         }
       }
     });
-  }, []);
+  }, [user]);
 
   const togglePeersModal = () => setShowPeersModal((old) => !old);
 
