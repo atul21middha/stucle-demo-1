@@ -9,7 +9,7 @@ import AddPeersModal from "../AddPeersModal";
 const Header = () => {
   const [showPeersModal, setShowPeersModal] = useState(false);
   const room = useRoomContext();
-  const { user, setUser, setToken } = useUserContext();
+  const { user, setUser } = useUserContext();
   const { localParticipant } = room;
   const { isLocal, cameraPublication } = useParticipant(localParticipant);
 
@@ -18,7 +18,6 @@ const Header = () => {
   const onDisconnect = () => {
     room.disconnect();
     setUser(null);
-    setToken(null);
   };
 
   return (
