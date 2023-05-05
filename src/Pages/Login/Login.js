@@ -4,7 +4,7 @@ import { useUserContext } from "../../utils/UserContext";
 import "./styles.css";
 
 const Login = () => {
-  const { setUser, setToken } = useUserContext();
+  const { setUser } = useUserContext();
 
   const onSubmit = async (values) => {
     const validUser = dummyData.find((user) => user.id === values.username);
@@ -20,9 +20,8 @@ const Login = () => {
       );
       data = await data.json();
       if (data.token) {
-        setToken(data.token);
+        setUser({ ...validUser, metadata: values, token: data.token });
       }
-      setUser({ ...validUser, metadata: values });
     } catch (e) {
       console.log("e", e);
     }

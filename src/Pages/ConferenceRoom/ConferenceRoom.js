@@ -4,11 +4,11 @@ import Participants from "./Participants";
 import "./styles.css";
 
 const ConferenceRoom = () => {
-  const { token, user } = useUserContext();
+  const { user } = useUserContext();
   return (
     <div>
       <LiveKitRoom
-        token={token}
+        token={user.token}
         serverUrl={process.env.REACT_APP_SERVER_URL}
         connect={true}
         video={true}
