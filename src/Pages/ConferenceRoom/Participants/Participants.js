@@ -59,17 +59,18 @@ const Participants = () => {
           notifyUsers(STATUSES.BUSY);
         } else {
           sendMessageToParticipant(participant, STATUSES.NO_RESPONSE);
+          setIncomingCallFrom(null);
+          notifyUsers(STATUSES.AVAILABLE);
         }
       }
       //message when remote user accepts the huddle request
-      if (data.connection === STATUSES.CONNECTED) {
+      else if (data.connection === STATUSES.CONNECTED) {
         setRemoteParticipant(participant);
       }
       //message when user gives no response to huddle
-      if (data.connection === STATUSES.NO_RESPONSE) {
+      else if (data.connection === STATUSES.NO_RESPONSE) {
         onUnpublishTrack();
-      }
-      if (data.connection === STATUSES.REJECTED) {
+      } else if (data.connection === STATUSES.REJECTED) {
         notifyUsers(STATUSES.AVAILABLE);
         setUser((old) => ({ ...old, huddle: null }));
       }
