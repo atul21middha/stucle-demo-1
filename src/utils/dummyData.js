@@ -1,7 +1,7 @@
 export const dummyData = [
-  { id: "S1", name: "S1", peers: ["S2", "S3", "S10"] },
-  { id: "S2", name: "S2", peers: ["S1", "S5"] },
-  { id: "S3", name: "S3", peers: ["S1", "S6"] },
+  { id: "S1", name: "S1", peers: ["S2", "S3"] },
+  { id: "S2", name: "S2", peers: ["S1", "S4"] },
+  { id: "S3", name: "S3", peers: ["S2", "S4", "S5"] },
   { id: "S4", name: "S4", peers: [] },
   { id: "S5", name: "S5", peers: ["S2"] },
   { id: "S6", name: "S6", peers: ["S3"] },

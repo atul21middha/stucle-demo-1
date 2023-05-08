@@ -3,90 +3,53 @@ import {
   useRemoteParticipants,
   useRoomContext,
 } from "@livekit/components-react";
-import {
-  createLocalAudioTrack,
-  DataPacket_Kind,
-  RoomEvent,
-} from "livekit-client";
+import { createLocalAudioTrack, RoomEvent } from "livekit-client";
 import { useEffect, useState } from "react";
 import { Button } from "react-bootstrap";
 import Loader from "../../../Components/Loader";
-import { STATUSES } from "../../../utils/constants";
 import { dummyData } from "../../../utils/dummyData";
 import { useUserContext } from "../../../utils/UserContext";
 import AddPeersModal from "../AddPeersModal";
-import IncomingCallModal from "../IncomingCallModal";
 import Header from "./Header";
 import LoggedOffPeer from "./LoggedOffPeer";
 import Participant from "./Participant";
+import RemoteParticipant from "./RemoteParticipant";
 
 const Participants = () => {
   const room = useRoomContext();
   const participants = useRemoteParticipants({ room });
   const { user, setUser } = useUserContext();
   const [showPeersModal, setShowPeersModal] = useState(false);
-  const [incomingCallFrom, setIncomingCallFrom] = useState(null);
   const { localParticipant } = room;
-  const [remoteParticipant, setRemoteParticipant] = useState(null);
+  const [incomingCallFrom, setIncomingCallFrom] = useState(null);
 
   // to publish the audio track once the remote user has accepted the huddle
   useEffect(() => {
-    if (remoteParticipant) {
-      onPublishTrack(remoteParticipant);
-      setRemoteParticipant(null);
+    if (incomingCallFrom) {
+      onPublishTrack(incomingCallFrom);
     }
-  }, [remoteParticipant]);
+  }, [incomingCallFrom]);
 
   useEffect(() => {
     // this is called when remote user unpublishes a track
-    room.on("trackSubscriptionStatusChanged", (track, status) => {
-      if (track.kind === "audio" && status !== "subscribed") {
-        setIncomingCallFrom(null);
-        onUnpublishTrack();
+    room.on("trackSubscriptionStatusChanged", (track, status, participant) => {
+      if (track.kind === "audio") {
+        if (status !== "subscribed") {
+          onUnpublishTrack();
+        }
+        if (status === "subscribed") {
+          if (localParticipant.audioTracks.size === 0) {
+            setIncomingCallFrom(participant);
+          }
+        }
       }
     });
   }, [room]);
 
   useEffect(() => {
-    //To communicate between the participants
-    const decoder = new TextDecoder();
-    room.on(RoomEvent.DataReceived, (payload, participant, kind) => {
-      const data = JSON.parse(decoder.decode(payload));
-      //message when a user starts huddle
-      if (data.connection === STATUSES.DESIRED) {
-        if (user.peers.includes(participant.identity)) {
-          setIncomingCallFrom(participant);
-          notifyUsers(STATUSES.BUSY);
-        } else {
-          sendMessageToParticipant(participant, STATUSES.NO_RESPONSE);
-          setIncomingCallFrom(null);
-          notifyUsers(STATUSES.AVAILABLE);
-        }
-      }
-      //message when remote user accepts the huddle request
-      else if (data.connection === STATUSES.CONNECTED) {
-        setRemoteParticipant(participant);
-      }
-      //message when user gives no response to huddle
-      else if (data.connection === STATUSES.NO_RESPONSE) {
-        onUnpublishTrack();
-      } else if (data.connection === STATUSES.REJECTED) {
-        notifyUsers(STATUSES.AVAILABLE);
-        setUser((old) => ({ ...old, huddle: null }));
-      }
-    });
-  }, [user?.peers]);
-
-  useEffect(() => {
     //if user disconnects from room in between a huddle call
     room.on(RoomEvent.ParticipantDisconnected, (participant) => {
-      if (
-        user.huddle?.to === participant.identity ||
-        user.huddle?.peer === participant.identity
-      ) {
-        notifyUsers(STATUSES.AVAILABLE);
-        if (participant.identity === incomingCallFrom.identity)
-          setIncomingCallFrom(null);
+      if (user.huddle?.peer === participant.identity) {
         if (localParticipant.audioTracks.size > 0) {
           onUnpublishTrack();
         } else {
@@ -107,40 +70,20 @@ const Participants = () => {
     if (audioTrack) {
       await localParticipant.unpublishTrack(audioTrack);
     }
+    setIncomingCallFrom(null);
     setUser((old) => ({ ...old, huddle: null }));
-    notifyUsers(STATUSES.AVAILABLE);
   };
 
   const onRemovePeer = (selected) => {
     setUser((old) => ({
       ...old,
-      peers: old.peers.filter((peer) => peer !== selected),
+      peers: old?.peers?.filter((peer) => peer !== selected),
     }));
-  };
-
-  //to send message to all participants
-  const notifyUsers = (status) => {
-    const strData = JSON.stringify({ connection: status });
-    const encoder = new TextEncoder();
-    const data = encoder.encode(strData);
-    localParticipant.publishData(data, DataPacket_Kind.LOSSY);
-  };
-
-  const sendMessageToParticipant = (participant, status) => {
-    const strData = JSON.stringify({ connection: status });
-    const encoder = new TextEncoder();
-    const data = encoder.encode(strData);
-    // publish reliable data to a set of participants
-    room.localParticipant.publishData(data, DataPacket_Kind.RELIABLE, [
-      participant.sid,
-    ]);
   };
 
   //function called on clicking start huddle
   const onStartHuddle = (participant) => {
-    setUser((old) => ({ ...old, huddle: { to: participant.identity } }));
-    sendMessageToParticipant(participant, STATUSES.DESIRED);
-    notifyUsers(STATUSES.BUSY);
+    onPublishTrack(participant);
   };
 
   //function called to publish audio track
@@ -150,7 +93,6 @@ const Participants = () => {
       noiseSuppression: true,
     });
     localParticipant.publishTrack(audioTrack).then((res) => {
-      notifyUsers(STATUSES.BUSY);
       setUser((old) => ({
         ...old,
         huddle: {
@@ -180,10 +122,6 @@ const Participants = () => {
         });
       });
       localParticipant.setTrackSubscriptionPermissions(false, permissions);
-      if (type === "incoming") {
-        sendMessageToParticipant(incomingCallFrom, "connected");
-        setIncomingCallFrom(null);
-      }
     });
   };
 
@@ -196,9 +134,17 @@ const Participants = () => {
       }
     });
   }
-  loggedOffUsers = user.peers.filter(
+  loggedOffUsers = user?.peers?.filter(
     (peer) => !!!loggedInUsers.find((item) => item.identity === peer)
   );
+
+  //checking if the huddle partner is a peer or not
+  let isCallerPeer = loggedInUsers.find(
+    (user) => user.identity === incomingCallFrom?.identity
+  );
+
+  //this is to show the participant tile when participant is not peer
+  const showRemoteUser = incomingCallFrom && !!!isCallerPeer && user.huddle;
 
   return (
     <>
@@ -214,6 +160,14 @@ const Participants = () => {
                   onUnpublishTrack={onUnpublishTrack}
                 />
               </ParticipantLoop>
+              {showRemoteUser && (
+                <RemoteParticipant
+                  onRemovePeer={onRemovePeer}
+                  startHuddleCall={onStartHuddle}
+                  onUnpublishTrack={onUnpublishTrack}
+                  remoteParticipant={incomingCallFrom}
+                />
+              )}
               {(loggedOffUsers || []).map((user) => (
                 <LoggedOffPeer
                   key={user}
@@ -223,7 +177,7 @@ const Participants = () => {
               ))}
             </div>
           </div>
-          {![...loggedInUsers, ...loggedOffUsers].length && (
+          {![...loggedInUsers, ...loggedOffUsers].length && !showRemoteUser && (
             <>
               <div className="texAlign">
                 <h5>Seems like you don't have any peer, Start adding now</h5>
@@ -237,18 +191,6 @@ const Participants = () => {
       )}
       {showPeersModal && (
         <AddPeersModal show={showPeersModal} handleModal={togglePeersModal} />
-      )}
-      {!!incomingCallFrom && (
-        <IncomingCallModal
-          show={!!incomingCallFrom}
-          handleModal={() => setIncomingCallFrom(null)}
-          onAccept={() => {
-            onPublishTrack(incomingCallFrom, "incoming");
-          }}
-          incomingCallFrom={incomingCallFrom}
-          sendMessageToParticipant={sendMessageToParticipant}
-          notifyUsers={notifyUsers}
-        />
       )}
     </>
   );

@@ -3,17 +3,14 @@ import {
   ParticipantContext,
   ParticipantTile,
   TrackToggle,
-  useRoomContext,
 } from "@livekit/components-react";
-import { RoomEvent, Track } from "livekit-client";
+import { Track } from "livekit-client";
 import { useContext, useEffect, useState } from "react";
 import { useUserContext } from "../../../utils/UserContext";
 
 const Participant = ({ onRemovePeer, startHuddleCall, onUnpublishTrack }) => {
   const participant = useContext(ParticipantContext);
   const { user } = useUserContext();
-  const room = useRoomContext();
-  const [busy, setBusy] = useState(false);
   const [showButtons, setShowButtons] = useState(false);
 
   const handleShowButtons = () => setShowButtons((old) => !old);
@@ -27,26 +24,12 @@ const Participant = ({ onRemovePeer, startHuddleCall, onUnpublishTrack }) => {
   const getBgColor = () => {
     if (isParticipantConnected) {
       return "green";
-    } else if (isAudioTrackPublished || busy) {
+    } else if (isAudioTrackPublished) {
       return "orange";
     } else {
       return "yellow";
     }
   };
-
-  useEffect(() => {
-    const decoder = new TextDecoder();
-    room.on(RoomEvent.DataReceived, (payload, remote, kind) => {
-      const data = JSON.parse(decoder.decode(payload));
-      //message when a user starts huddle
-      if (remote.identity === participant.identity) {
-        if (data.connection === "busy") setBusy(true);
-        else {
-          setBusy(false);
-        }
-      }
-    });
-  }, []);
 
   const onClickHuddleButton = () => {
     if (isParticipantConnected) {
@@ -66,7 +49,7 @@ const Participant = ({ onRemovePeer, startHuddleCall, onUnpublishTrack }) => {
   });
 
   const isHuddleButtonDeactivated =
-    !isParticipantConnected && (!!user.huddle || isAudioTrackPublished || busy);
+    !isParticipantConnected && (!!user.huddle || isAudioTrackPublished);
 
   return (
     <div
